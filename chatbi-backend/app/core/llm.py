@@ -7,6 +7,9 @@
 作者：CYJ
 """
 from typing import Optional
+from contextlib import contextmanager
+import time
+import threading
 from langchain_openai import ChatOpenAI
 from app.core.config import get_settings
 import logging
@@ -113,3 +116,59 @@ def get_llm(temperature: float = 0.0, streaming: bool = True) -> ChatOpenAI:
             print(chunk.content)
     """
     return LLMFactory.get_llm(temperature=temperature, streaming=streaming)
+
+
+# LLM 调用限流器
+class LLMRateLimiter:
+    """
+    LLM 调用限流器
+    防止短时间内大量调用 LLM 导致超频
+    
+    Author: CYJ
+    Time: 2025-12-03
+    """
+    _instance = None
+    _lock = threading.Lock()
+    
+    # 限流配置
+    MIN_INTERVAL = 0.1  # 最小调用间隔(秒)
+    
+    def __new__(cls):
+        if cls._instance is None:
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = super().__new__(cls)
+                    cls._instance._last_call_time = 0
+        return cls._instance
+    
+    def wait_if_needed(self):
+        """If called too quickly, wait to respect rate limits"""
+        with self._lock:
+            now = time.time()
+            elapsed = now - self._last_call_time
+            if elapsed < self.MIN_INTERVAL:
+                sleep_time = self.MIN_INTERVAL - elapsed
+                time.sleep(sleep_time)
+            self._last_call_time = time.time()
+
+
+_rate_limiter = LLMRateLimiter()
+
+
+@contextmanager
+def llm_rate_limit_sync():
+    """
+    LLM 调用限流上下文管理器 (同步版本)
+    
+    使用示例:
+        with llm_rate_limit_sync():
+            result = llm.invoke(messages)
+    
+    Author: CYJ
+    Time: 2025-12-03
+    """
+    _rate_limiter.wait_if_needed()
+    try:
+        yield
+    finally:
+        pass
