@@ -217,3 +217,15 @@ talktobi-backend/
 - **密码**: 123456
 
 ⚠️ 请在生产环境中及时修改默认密码！
+
+## License
+
+本项目采用 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) 协议。
+
+- ✅ 允许免费使用、复制、修改和分发
+- ✅ 需要署名原作者
+- ❌ 禁止商业用途
+
+## Author
+
+CYJ
